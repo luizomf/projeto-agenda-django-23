@@ -1,7 +1,7 @@
 {% extends 'global/base.html' %}
 
 {% block content %}
-  {% if contacts %}
+  {% if page_obj %}
     <div class="responsive-table">
       <table class="contacts-table">
         <caption class="table-caption ">
@@ -19,7 +19,7 @@
         </thead>
 
         <tbody>
-          {% for contact in contacts %}
+          {% for contact in page_obj %}
             <tr class="table-row">
               <td class="table-cel">
                 <a 
