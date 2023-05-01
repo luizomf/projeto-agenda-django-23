@@ -239,6 +239,11 @@ svg {
   border: 1px solid rgba(255, 255, 0, 90%);
 }
 
+.message.info {
+  background: rgba(0, 0, 255, 0.3);
+  border: 1px solid rgba(0, 0, 255, 0.3);
+}
+
 .form-wrapper {
   max-width: 60rem;
   margin: var(--spacing) auto;
