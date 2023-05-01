@@ -10,19 +10,28 @@
       method="POST"
       enctype="multipart/form-data"
     >
-      {% csrf_token %}
-
+      {% csrf_token %}      
+      
       <div class="form-content">
-        <div class="form-group">
-          <label for="id_first_name">first_name</label>
-          <input type="text" name="first_name" maxlength="255" id="id_first_name">
-        </div>
-        
-        <div class="form-group">
-          <label for="id_last_name">last_name</label>
-          <input type="text" name="last_name" maxlength="255" id="id_last_name">
-        </div>
+
+        {% for field in form %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
       </div>
+
+      {% if form.non_field_errors %}
+        <div class="form-content">
+          <div class="form-group">
+            <div class="message error">
+              {{ form.non_field_errors }}
+            </div>
+          </div>
+        </div>
+      {% endif %}
 
       <div class="form-content">
         <div class="form-group">
