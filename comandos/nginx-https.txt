@@ -1,0 +1,129 @@
+# https://www.nginx.com/blog/using-free-ssltls-certificates-from-lets-encrypt-with-nginx/
+#
+# REPLACES
+# __YOUR_DOMAIN_OR_IP__ = Replace with your domain
+# __APP_ABSOLUTE_PATH__ = Replace with the path to the folder for the project
+# __STATIC_ABSOLUTE_PATH__ = Replace with the path to the folder for static files
+# __MEDIA_ABSOLUTE_PATH__ = Replace with the path to the folder for media files
+# __GUNICORN_FILE_NAME__ = Replace with your unix socket name
+# 
+# For letsencrypt and Ubuntu:
+# sudo apt update -y && sudo apt upgrade -y && sudo apt autoremove -y
+# sudo apt install nginx certbot python3-certbot-nginx -y
+# sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 4096
+# sudo systemctl stop nginx
+# sudo certbot certonly --standalone -d __YOUR_DOMAIN_OR_IP__
+# sudo chmod -R 755 __APP_ABSOLUTE_PATH__
+# sudo nano /etc/nginx/sites-available/__YOUR_DOMAIN_OR_IP__
+# Add contents of this file
+# sudo ln -s /etc/nginx/sites-available/__YOUR_DOMAIN_OR_IP__ /etc/nginx/sites-enabled/__YOUR_DOMAIN_OR_IP__
+#
+# Set timezone
+# List - timedatectl list-timezones
+# sudo timedatectl set-timezone America/Sao_Paulo
+#
+# HTTP
+server {
+  listen 80;
+  listen [::]:80;
+  server_name __YOUR_DOMAIN_OR_IP__;
+  return 301 https://$host$request_uri;
+}
+
+# HTTPS
+server {
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+
+  server_name __YOUR_DOMAIN_OR_IP__;
+
+  ssl_certificate /etc/letsencrypt/live/__YOUR_DOMAIN_OR_IP__/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/__YOUR_DOMAIN_OR_IP__/privkey.pem;
+  ssl_trusted_certificate /etc/letsencrypt/live/__YOUR_DOMAIN_OR_IP__/chain.pem;
+
+  # Improve HTTPS performance with session resumption
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 5m;
+
+  # Enable server-side protection against BEAST attacks
+  ssl_prefer_server_ciphers on;
+  ssl_ciphers ECDH+AESGCM:ECDH+AES256:ECDH+AES128:DH+3DES:!ADH:!AECDH:!MD5;
+
+  # Disable SSLv3
+  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+  # Diffie-Hellman parameter for DHE ciphersuites
+  # $ sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 4096
+  ssl_dhparam /etc/ssl/certs/dhparam.pem;
+
+  # Enable HSTS (https://developer.mozilla.org/en-US/docs/Security/HTTP_Strict_Transport_Security)
+  add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+
+  # Enable OCSP stapling (http://blog.mozilla.org/security/2013/07/29/ocsp-stapling-in-firefox)
+  ssl_stapling on;
+  ssl_stapling_verify on;
+  resolver 8.8.8.8 8.8.4.4 valid=300s;
+  resolver_timeout 5s;
+
+  # Add index.php to the list if you are using PHP
+  index index.html index.htm index.nginx-debian.html index.php;
+  
+  # ATTENTION: __STATIC_ABSOLUTE_PATH__
+  location /static {
+    autoindex on;
+    alias __STATIC_ABSOLUTE_PATH__;
+  }
+
+  # ATTENTION: __MEDIA_ABSOLUTE_PATH__ 
+  location /media {
+    autoindex on;
+    alias __MEDIA_ABSOLUTE_PATH__;
+  }
+
+  # ATTENTION: __GUNICORN_FILE_NAME__
+  location / {
+    proxy_pass http://unix:/run/__GUNICORN_FILE_NAME__.socket;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+  }
+
+  # deny access to .htaccess files, if Apache's document root
+  # concurs with nginx's one
+  #
+  location ~ /\.ht {
+    deny all;
+  }
+
+  location ~ /\. {
+    access_log off;
+    log_not_found off;
+    deny all;
+  }
+
+  gzip on;
+  gzip_disable "msie6";
+
+  gzip_comp_level 6;
+  gzip_min_length 1100;
+  gzip_buffers 4 32k;
+  gzip_proxied any;
+  gzip_types
+    text/plain
+    text/css
+    text/js
+    text/xml
+    text/javascript
+    application/javascript
+    application/x-javascript
+    application/json
+    application/xml
+    application/rss+xml
+    image/svg+xml;
+
+  access_log off;
+  #access_log  /var/log/nginx/__YOUR_DOMAIN_OR_IP__-access.log;
+  error_log   /var/log/nginx/__YOUR_DOMAIN_OR_IP__-error.log;
+}
