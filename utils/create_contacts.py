@@ -49,7 +49,7 @@ if __name__ == '__main__':
                 last_name=last_name,
                 phone=phone,
                 email=email,
-                created_date=created_date,
+                create_date=created_date,
                 description=description,
                 category=category,
             )
